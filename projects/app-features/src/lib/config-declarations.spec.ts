@@ -134,7 +134,7 @@ describe('ConfigService declarations', () => {
     it('isPersistableUrl rejects blob: and data: URLs only', () => {
       expect(isPersistableUrl('')).toBe(true);
       expect(isPersistableUrl('https://host/file.root')).toBe(true);
-      expect(isPersistableUrl('epic://epic_craterlake.root')).toBe(true);
+      expect(isPersistableUrl('exp://detector.root')).toBe(true);
       expect(isPersistableUrl('blob:https://host/5b1c')).toBe(false);
       expect(isPersistableUrl(' DATA:application/json;base64,e30=')).toBe(false);
       expect(isPersistableUrl(42)).toBe(false);

@@ -14,6 +14,7 @@
 
 import { Injectable, inject, signal } from '@angular/core';
 import { COMMAND_HANDLERS } from './tokens';
+import { resolveRegistry } from './registry';
 
 /** A serializable command. `type` selects the handler; other fields are its arguments. */
 export interface AppCommand {
@@ -25,8 +26,9 @@ export interface AppCommand {
 
 /**
  * A command handler contributed through `withCommandHandler()`.
- * One handler per command type; later registrations override earlier ones
- * (an extension may replace a built-in command deliberately).
+ * One handler per command type; a later registration replaces an earlier
+ * one (an extension may replace a built-in command deliberately). This is
+ * the registry rule of `resolveRegistry()`, keyed by `type`.
  */
 export interface CommandHandler {
   readonly type: string;
@@ -50,7 +52,7 @@ export class CommandBusService {
 
   constructor() {
     const handlers = inject(COMMAND_HANDLERS, { optional: true }) ?? [];
-    for (const handler of handlers) {
+    for (const handler of resolveRegistry(handlers, handler => handler.type)) {
       this.handlersByType.set(handler.type, handler);
     }
   }

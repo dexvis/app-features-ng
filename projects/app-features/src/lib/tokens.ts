@@ -58,6 +58,17 @@ export interface ConfigStorageOptions {
   prefix?: string;
 }
 
+/**
+ * Which packs contributed each value and class, keyed by the contributed
+ * value or class itself, for collision warnings of registries whose keys are
+ * only known at runtime. Contributions outside any pack list
+ * `APPLICATION_FEATURE_OWNER`; contributions of a pack of defaults
+ * (`appFeatureDefaults()`) have no entry. Filled in development builds only;
+ * empty in production.
+ */
+export const APP_FEATURE_OWNERS = new InjectionToken<ReadonlyMap<unknown, readonly string[]>>(
+  typeof ngDevMode !== 'undefined' && ngDevMode ? 'app-features.feature-owners' : '');
+
 /** Command handlers for the command bus. One handler per command type; the last registration wins. */
 export const COMMAND_HANDLERS = new InjectionToken<CommandHandler[]>(
   typeof ngDevMode !== 'undefined' && ngDevMode ? 'app-features.command-handlers' : '');

@@ -19,10 +19,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: npm
 
-      # No lockfile is committed yet: switch to `npm ci` (and `cache: npm`
-      # above) once package-lock.json is in the repository.
-      - run: npm install
+      - run: npm ci
 
       - run: npm test
 

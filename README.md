@@ -5,8 +5,10 @@ packs. An application assembles itself from `with*()` features; the package
 supplies the plumbing those features ride on:
 
 - **Feature composition**: `provideAppFeatures()`, `appFeatures()`,
-  `contributeValue()`, `contributeClass()`. Features are DI multi-providers;
-  nothing registers itself through import side effects.
+  `appFeaturePack()`, `appFeatureDefaults()`, `withoutFeatures()`, `contributeValue()`,
+  `contributeClass()`, `resolveRegistry()`. Features are DI multi-providers
+  with an optional identity; nothing registers itself through import side
+  effects.
 - **Layered config**: `ConfigService` and `ConfigProperty`, with the source
   precedence *defaults < server < localStorage < URL < runtime*. URL values
   last for the session and are never persisted.
@@ -107,7 +109,8 @@ file once the viewer page initializes.
 
 ## Features and feature packs
 
-A feature is an object with a `providers` array: one `with*()` call
+A feature is an object with a `kind` (what it contributes), an optional `id`
+(its identity, see below) and a `providers` array: one `with*()` call
 contributes one thing. Compose features into a pack with `appFeatures()`,
 which flattens arrays and skips falsy entries, so a pack can include
 features conditionally:
@@ -146,6 +149,68 @@ export function withExporter(exporter: Type<Exporter>): AppFeature {
 ```
 
 Read the contributions with `inject(EXPORTERS, { optional: true }) ?? []`.
+
+### Feature identity
+
+A feature with an `id` is installed once. When the same id occurs again, the
+later feature replaces the earlier one at the earlier one's position, and
+`withoutFeatures(id)` removes it wherever it sits, inside packs included.
+`appFeaturePack(id, ...)` composes features under an id; keyed built-in
+features derive theirs (`url-alias:<prefix>`, `url-shorthand:<param>`,
+`server-config`, `config-storage`). Give your own `with*()` functions an
+identity through the last argument of `contributeValue()` or
+`contributeClass()`:
+
+```ts
+import { AppFeature, appFeaturePack, contributeClass, withUrlShorthand } from '@dexvis/app-features';
+
+export function withJsonExport(): AppFeature {
+  return contributeClass(EXPORTERS, JsonExporter, { kind: 'exporter', id: 'exporter:json' });
+}
+
+export function withExportPack(): AppFeature {
+  return appFeaturePack('export-pack',
+    withJsonExport(),
+    withUrlShorthand('export', 'export-file'),
+  );
+}
+```
+
+An application drops a part of a pack it installs:
+
+```ts
+provideAppFeatures(
+  withExportPack(),
+  withoutFeatures('url-shorthand:export'),
+)
+```
+
+A pack that is removed (`withoutFeatures('export-pack')`) or replaced (a
+later `appFeaturePack('export-pack', ...)`) takes everything inside it
+along: its features, and its replacements and removals of features outside
+it. The features it replaced take effect again.
+
+An application's built-ins belong in `appFeatureDefaults(id, ...)`: a pack
+whose parts other packs are expected to replace by id. In development builds,
+`provideAppFeatures()` warns when one feature id comes from two ordinary
+packs with different content (replacing a part of a defaults pack is no
+collision), when a `withoutFeatures()` id matches nothing, when packs
+remove each other in a cycle (both are left out), and when a pack sits
+inside a pack with its own id (the inner one is ignored).
+`APP_FEATURE_OWNERS` maps each contributed value and class to the pack that
+contributed it, for registries that check their own keys.
+
+Registries whose keys are only known at runtime (a command handler's `type`,
+a loader's id) apply the same rule with `resolveRegistry()`: registration
+order, a later entry with the same id replacing the earlier one in place.
+The command bus resolves its handlers this way.
+
+```ts
+import { inject } from '@angular/core';
+import { resolveRegistry } from '@dexvis/app-features';
+
+const exporters = resolveRegistry(inject(EXPORTERS, { optional: true }) ?? [], exporter => exporter.format);
+```
 
 ## Layered config
 

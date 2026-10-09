@@ -4,6 +4,7 @@
 
 // Feature composition
 export * from './lib/features';
+export * from './lib/registry';
 export * from './lib/tokens';
 
 // Layered config

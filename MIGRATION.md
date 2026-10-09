@@ -3,7 +3,7 @@
 eiceye (`eye-ng`) carries a copy of the machinery this package now holds: it
 was copied from Firebird and renamed (`provideEiceye`, `EyeCommand`). This
 guide replaces that copy with the package, file for file. Firebird made the
-same move; its `firebird-ng/src/app/firebird/firebird-features.ts` is a
+same move; its `packages/firebird-ng/api/src/lib/firebird-features.ts` is a
 working example.
 
 ## Before you start
@@ -84,6 +84,10 @@ export function provideEiceye(...features: AppFeatureInput[]): EnvironmentProvid
 `withConfigDefaults`, `withCommandHandler` and `withUrlAlias` keep their names
 and signatures; import them from the package (or re-export them from
 `eiceye/index.ts`).
+
+A feature written as an object literal needs a `kind` in the package:
+`{ kind: 'initializer', providers: [provideAppInitializer(...)] }`. Features
+built with `contributeValue()`/`contributeClass()` get one automatically.
 
 ## URL shorthands
 

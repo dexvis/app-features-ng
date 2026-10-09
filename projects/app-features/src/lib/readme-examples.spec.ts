@@ -25,16 +25,20 @@ import {
   ConfigService,
   ServerConfigBase,
   ServerConfigService,
+  appFeaturePack,
   appFeatures,
   buildDeepLink,
   contributeClass,
   isPersistableUrl,
   provideAppFeatures,
+  resolveRegistry,
   withCommandHandler,
   withConfigDefaults,
   withConfigStorage,
   withServerConfig,
+  withoutFeatures,
   withUrlShorthand,
+  URL_SHORTHANDS,
 } from '../public-api';
 
 // README "Quick start": the command handler
@@ -96,6 +100,18 @@ export function withExporter(exporter: Type<Exporter>): AppFeature {
   return contributeClass(EXPORTERS, exporter);
 }
 
+// README "Feature identity"
+export function withJsonExport(): AppFeature {
+  return contributeClass(EXPORTERS, JsonExporter, { kind: 'exporter', id: 'exporter:json' });
+}
+
+export function withExportPack(): AppFeature {
+  return appFeaturePack('export-pack',
+    withJsonExport(),
+    withUrlShorthand('export', 'export-file'),
+  );
+}
+
 // README "Server config"
 export interface MyServerConfig extends ServerConfigBase {
   apiBaseUrl: string;
@@ -148,6 +164,25 @@ describe('README samples', () => {
     expect(exporters.map(e => e.format)).toEqual(['json']);
     expect(withFilePack().providers.length).toBe(2);
     expect(withFilePack({ verbose: true }).providers.length).toBe(3);
+  });
+
+  it('feature identity: a pack installs once, and an application drops a part by id', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideAppFeatures(
+          withExportPack(),
+          withExportPack(),
+          withoutFeatures('url-shorthand:export'),
+        ),
+      ],
+    });
+    expect(TestBed.inject(EXPORTERS).map(e => e.format)).toEqual(['json']);
+    expect(TestBed.inject(URL_SHORTHANDS, null)).toBeNull();
+    const exporters = TestBed.runInInjectionContext(() =>
+      resolveRegistry(inject(EXPORTERS, { optional: true }) ?? [], exporter => exporter.format));
+    expect(exporters.map(e => e.format)).toEqual(['json']);
   });
 
   it('layered config: declare, read, write', () => {
